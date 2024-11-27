@@ -10,12 +10,11 @@ app.use(express.static(__dirname))
 
 // mkcert create-ca
 // mkcert create-cert
-const key = fs.readFileSync('cert.key');
-const cert =fs.readFileSync('cert.crt');
-console.log('read cert and key!')
-console.log('port:', process.env.PORT);
 let expressServer
 if (process.env.NODE_ENV === 'development') {
+    console.log('read cert and key!')
+    const key = fs.readFileSync('cert.key');
+    const cert =fs.readFileSync('cert.crt');
     expressServer = https.createServer({key, cert} ,app)
 } else {
     expressServer = http.createServer(app)
