@@ -3,10 +3,13 @@ const password = 'x'
 document.querySelector('#user-name').innerHTML = username
 
 console.log('start...');
-const socket = io.connect('https://192.168.10.145:8443', {
+const socket = io.connect('//', {
     auth: {
         username, password,
     }
+});
+socket.on('connect', () => {
+    console.log('connected....');
 })
 
 const localVideoEl = document.querySelector('#local-video');

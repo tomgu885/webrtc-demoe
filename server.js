@@ -1,5 +1,6 @@
 const fs = require('fs')
 const https = require('https')
+const http = require('http')
 const express = require('express')
 
 const app = express()
@@ -12,7 +13,14 @@ app.use(express.static(__dirname))
 const key = fs.readFileSync('cert.key');
 const cert =fs.readFileSync('cert.crt');
 console.log('read cert and key!')
-const expressServer = https.createServer({key, cert} ,app)
+console.log('port:', process.env.PORT);
+let expressServer
+if (process.env.NODE_ENV === 'development') {
+    expressServer = https.createServer({key, cert} ,app)
+} else {
+    expressServer = http.createServer(app)
+}
+
 
 const io = socketio(expressServer, {
     cors: {
@@ -20,9 +28,10 @@ const io = socketio(expressServer, {
     },
     methods: ['GET', 'POST'],
 })
-
-expressServer.listen(8443, (token) => {
-    console.log('listening...', token);
+let port = process.env.PORT || 3000;
+console.log('port:', port)
+expressServer.listen(port, () => {
+    console.log('listening...: ', port);
 });
 
 const offers = [

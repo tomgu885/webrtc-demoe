@@ -21,4 +21,30 @@ $turnserver  --external-ip 103.192.178.121 --log-file stdout
 6. Signaling service, 初始化连接时候需要的
 
 
-https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Protocols
+## 搭建 coturn 服务器
+
+```bash
+$sudo apt update && sudo apt install coturn -y
+
+```
+
+```config
+## /etc/turnserver.conf
+min-port=49152
+max-port=65535
+listening-ip=103.192.178.121
+relay-ip=103.192.178.121
+external-ip=103.192.178.121
+user=coturn:Pass@123
+realm=turn.dk-chat.com
+fingerprint
+lt-cred-mech
+no-cli
+```
+
+
+## 参考
+
+1. https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Protocols
+1. https://github.com/robertbunch/webrtc-starter
+2. https://www.videosdk.live/developer-hub/stun-turn-server/webrtc-turn-server
