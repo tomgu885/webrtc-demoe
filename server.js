@@ -11,8 +11,9 @@ app.use(express.static(__dirname))
 // mkcert create-ca
 // mkcert create-cert
 let useHttps = process.env.HTTPS
+console.log('useHttps', useHttps);
 let expressServer
-if ( useHttps) {
+if ( useHttps === 'true') {
     console.log('read cert and key!')
     const key = fs.readFileSync('cert.key');
     const cert =fs.readFileSync('cert.crt');
