@@ -3,7 +3,7 @@ const password = 'x'
 document.querySelector('#user-name').innerHTML = username
 
 console.log('start...');
-const socket = io.connect('//', {
+const socket = io.connect('https://webrtc-demo.dk-chat.com/', {
     auth: {
         username, password,
     }
