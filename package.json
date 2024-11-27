@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "ENV=developement nodemon --env-file=.env.developement server.js",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prod": "ENV=production node --env-file=.env.production server.js"
   },
   "devDependencies": {
     "prettier": "^3.3.1",
