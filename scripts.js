@@ -28,8 +28,6 @@ let peerConfiguration = {
                 'stun:stun.chat.bilibili.com:19302',
                 'stun:stun.miwifi.com:19302',
             ]
-        }, {
-
         }
     ]
 }
@@ -76,7 +74,7 @@ const fetchUserMedia = () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: true,
-                // audio: true,
+                audio: true,
             })
             localVideoEl.srcObject = stream;
             localStream = stream;
