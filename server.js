@@ -10,8 +10,9 @@ app.use(express.static(__dirname))
 
 // mkcert create-ca
 // mkcert create-cert
+let useHttps = process.env.HTTPS
 let expressServer
-if (process.env.NODE_ENV === 'development') {
+if ( useHttps) {
     console.log('read cert and key!')
     const key = fs.readFileSync('cert.key');
     const cert =fs.readFileSync('cert.crt');
@@ -74,13 +75,14 @@ io.on('connection', socket => {
         }
         console.log('client disconnected', connectedSockets.length);
 
-        console.log('offers', offers);
+        // console.log('offers', offers);
         for (let i = 0, l = offers.length; i < l;i++) {
-            if (username === offers[i].offerUsername) {
+            if (offers[i] && username === offers[i].offerUsername) {
                 offers.splice(i, 1)
+                break
             }
         }
-
+        console.log('offer left', offers.length);
         socket.broadcast.emit('availableOffers', offers)
     })
 
@@ -93,7 +95,7 @@ io.on('connection', socket => {
             answerUsername: null,
             answerIceCandidates: [],
         })
-
+        console.log('newOffer:', offers.length)
         socket.broadcast.emit('newOfferAwaiting', offers.slice(-1))
     })
 

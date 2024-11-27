@@ -3,7 +3,12 @@ const password = 'x'
 document.querySelector('#user-name').innerHTML = username
 
 console.log('start...');
-const socket = io.connect('https://webrtc-demo.dk-chat.com/', {
+// const ws = 'https://webrtc-demo.dk-chat.com/';
+const wsUrl = 'https://localhost:8444/';
+
+const wsUrl2 = 'https://'+window.location.host+'/'
+console.log('wsUrl2:', wsUrl2)
+const socket = io.connect(wsUrl2, {
     auth: {
         username, password,
     }
