@@ -48,13 +48,33 @@ io.on('connection', socket => {
     }
 
     connectedSockets.push({
-        username: username,
-        socketId: socket.id
+        socketId: socket.id,
+        username,
     })
-
+    console.log('client connected:', connectedSockets.length);
     if (offers.length > 0) {
         socket.emit('availableOffers', offers)
     }
+
+    socket.on('disconnect', () => {
+        const username = socket.handshake.auth.username
+        for (let i = 0, l = connectedSockets.length; i < l; i++) {
+            if (connectedSockets[i].username === username) {
+                connectedSockets.splice(i, 1)
+                break
+            }
+        }
+        console.log('client disconnected', connectedSockets.length);
+
+        console.log('offers', offers);
+        for (let i = 0, l = offers.length; i < l;i++) {
+            if (username === offers[i].offerUsername) {
+                offers.splice(i, 1)
+            }
+        }
+
+        socket.broadcast.emit('availableOffers', offers)
+    })
 
     socket.on('newOffer', newOffer => {
         offers.push({
@@ -70,36 +90,34 @@ io.on('connection', socket => {
     })
 
     socket.on('newAnswer', (offerObj, ackFunction) => {
-        console.log('offerObj:', offerObj)
+        console.log('newAnswer|offerObj.offerUsername:', offerObj.offerUsername)
         // emit this answer back to client1
-        const socketToAnswer = connectedSockets.find(s => {
-            s.username === offerObj.username
-        })
-
+        const socketToAnswer = connectedSockets.find(s => s.username === offerObj.offerUsername)
+        console.log('socketToAnswer', socketToAnswer)
         if (!socketToAnswer) {
             console.log('no matching socket')
             return;
         }
 
         const socketIdToAnswer = socketToAnswer.socketId
-        const offerToUpdate = offers.find(s => s.username === offerObj.username)
+        const offerToUpdate = offers.find(s => s.offerUsername === offerObj.offerUsername)
         if (!offerToUpdate) {
             console.log('no offer to update')
             return;
         }
 
-        ackFunction(offerToUpdate.offerIceCandidate)
+        ackFunction(offerToUpdate.offerIceCandidates)
         offerToUpdate.answer = offerObj.answer
         offerToUpdate.answerUsername = username
 
         socket.to(socketIdToAnswer).emit('answerResponse', offerToUpdate)
-    }) // newAnswer
+    }) // socket.on('newAnswer')
 
     socket.on('sendIceCandidateToSignalingServer', iceCandidateObj => {
         const {didIOOffer, iceUsername, iceCandidate } = iceCandidateObj;
-        console.log('signaling: offers:', offers)
+
         if (didIOOffer) {
-            const offerInOffers = offers.find(s => s.username === iceUsername);
+            const offerInOffers = offers.find(s => s.offerUsername === iceUsername);
             if (!offerInOffers) {
                 return
             }

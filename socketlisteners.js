@@ -10,6 +10,7 @@ socket.on('newOfferAwaiting', offers => {
 });
 
 socket.on('answerResponse', offerObj => {
+    console.log('answerResponse:', offerObj);
     addAnswer(offerObj);
 })
 
@@ -18,9 +19,9 @@ socket.on('receivedIceCandidateFromServer', iceCandidate => {
     addNewIceCandidate(iceCandidate);
 })
 
-
 function createOfferEls(offers) {
     const answerEl = document.querySelector('#answer');
+    answerEl.innerHTML = '';
     offers.forEach(offer => {
         console.log('offer', offer);
         const newOfferEl = document.createElement('div');

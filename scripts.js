@@ -21,10 +21,12 @@ let peerConfiguration = {
     iceServers: [
         {
             urls:[
-                'stun:stun.yy.com',
-                'stun:stun.chat.bilibili.com',
-                'stun:stun.miwifi.com',
+                'stun:stun.yy.com:19302',
+                'stun:stun.chat.bilibili.com:19302',
+                'stun:stun.miwifi.com:19302',
             ]
+        }, {
+
         }
     ]
 }
@@ -36,29 +38,33 @@ const call = async (evt) => {
         console.log('create offer');
         const offer = await peerConnection.createOffer();
         console.log('offer', offer);
-        peerConnection.setLocalDescription(offer);
+        await peerConnection.setLocalDescription(offer);
         didIOOffer = true;
-        socket.emit('newOffer', offer);;
+        socket.emit('newOffer', offer);
     } catch (err) {
         console.error(err);
     }
+
+    console.log('create offer');
 }
 
 const answerOffer = async (offerObj) => {
-    console.log('answerOffer offerObj', offerObj);
+    console.log('answerOffer offerObj.offerUsername', offerObj.offerUsername);
     await fetchUserMedia();
     await createPeerConnection(offerObj);
     const answer = await peerConnection.createAnswer({});
     await peerConnection.setLocalDescription(answer);
     offerObj.answer = answer;
-    const offerIceCandidate = await socket.emitWithAck('newAnswer', offerObj);
-    offerIceCandidate.forEach(c => {
+    const offerIceCandidates = await socket.emitWithAck('newAnswer', offerObj);
+    console.log('offerIceCandidates', offerIceCandidates);
+    offerIceCandidates.forEach(c => {
         peerConnection.addIceCandidate(c);
         console.log('add ice candidate', c);
     });
 }
 
 const addAnswer = async (offerObj) => {
+    console.log('addAnswer:', offerObj)
     await peerConnection.setRemoteDescription(offerObj.answer);
 }
 
@@ -94,6 +100,9 @@ const createPeerConnection = (offerObj) => {
         peerConnection.addEventListener('signalingstatechange', (event) => {
             console.log('signalingstatechange', event);
             console.log('signaling statechange', peerConnection.signalingState);
+            if (peerConnection.signalingState === "stable") {
+                console.info('stable')
+            }
         });
 
         peerConnection.addEventListener('icecandidate', (event) => {
@@ -108,12 +117,14 @@ const createPeerConnection = (offerObj) => {
         }); // icecandidate
 
         peerConnection.addEventListener('track', (event) => {
-            console.log('get track from another peer', event);
-            console.log('get track from another peer', event.streams);
-            event.streams[0].getTracks().forEach(track => {
-                console.log('add remote track');
-                remoteStream.adddTrack(track);
-            });
+            console.warn('track')
+            console.warn('get track from another peer', event);
+            console.log('get track from another peer stream', event.streams);
+            remoteStream.addTrack(event.track)
+            // event.streams[0].getTracks().forEach(track => {
+            //     console.log('add remote track');
+            //     remoteStream.adddTrack(track);
+            // });
         }) // track
 
         if (offerObj) {
@@ -125,10 +136,11 @@ const createPeerConnection = (offerObj) => {
 }
 
 const addNewIceCandidate = (iceCandidate) => {
-    if (!peerConnection) {
-        console.log('addNewIceCandidate, peerConnection not initialized');
-        return;
-    }
+    console.warn('addNewIceCandidate');
+    // if (!peerConnection) {
+    //     console.log('addNewIceCandidate, peerConnection not initialized');
+    //     return;
+    // }
     peerConnection.addIceCandidate(iceCandidate);
     console.log('addNewIceCandidate candidate', iceCandidate);
 }
