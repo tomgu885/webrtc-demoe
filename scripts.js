@@ -155,7 +155,7 @@ jQuery(function ($){
 
 
                 let isRelay = event.candidate && event.candidate.candidate.indexOf('relay') === -1
-                console.log('peerConnection.on(icecandidate) found', event.candidate );
+                console.log('peerConnection.on(icecandidate) foundKK158', event.candidate );
 
                 if (event.candidate) {
                     socket.emit('sendIceCandidateToSignalingServer', {
