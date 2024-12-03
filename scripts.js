@@ -152,24 +152,10 @@ jQuery(function ($){
             })
 
             peerConnection.addEventListener('icecandidate', (event) => {
-                let relayOnly = $('#relay_only').is(':checked');
-                // if (event.candidate === null) {
-                //     console.log('icecandidate null');
-                //     return
-                // }
+
 
                 let isRelay = event.candidate && event.candidate.candidate.indexOf('relay') === -1
-                console.log('peerConnection.on(icecandidate) found', event.candidate ,' |isRelay:', isRelay);
-                // if (event.candidate.candidate.indexOf('relay') === -1) {
-                //     return
-                // }
-
-                // if (!isRelay && relayOnly) {
-                //     console.log('icecandidate relay only.');
-                //     return
-                // }
-
-                // console.log('peerConnection.on(icecandidate)', event.candidate.candidate);
+                console.log('peerConnection.on(icecandidate) found', event.candidate );
 
                 if (event.candidate) {
                     socket.emit('sendIceCandidateToSignalingServer', {
@@ -186,16 +172,11 @@ jQuery(function ($){
                 console.warn('get track from another peer', event);
                 console.log('get track from another peer stream', event.streams);
                 remoteStream.addTrack(event.track)
-                // event.streams[0].getTracks().forEach(track => {
-                //     console.log('add remote track');
-                //     remoteStream.adddTrack(track);
-                // });
+
             }) // track
 
             if (offerObj) {
                 console.log('setRemoteDescriptionOffer11', offerObj.offer)
-                // Uncaught (in promise) OperationError: Failed to execute 'setRemoteDescription' on 'RTCPeerConnection': Failed to parse SessionDescription.
-                //     at scripts.js:183:38
                 await peerConnection.setRemoteDescription(offerObj.offer);
             }
 
