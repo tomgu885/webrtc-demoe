@@ -1,5 +1,4 @@
 jQuery(function ($){
-    console.log('ready.$', $);
     const username = 'Robby-'+Math.floor(Math.random()*100000)
     const password = 'x'
     document.querySelector('#user-name').innerHTML = username
@@ -8,8 +7,8 @@ jQuery(function ($){
 // const ws = 'https://webrtc-demo.dk-chat.com/';
     const wsUrl = 'https://localhost:8444/';
 
-    const wsUrl2 = 'https://'+window.location.host+'/'
-    console.log('wsUrl2:', wsUrl2)
+    const wsUrl2 = 'wss://'+window.location.host+'/'
+    console.log('wsUrl aa:', wsUrl2)
     const socket = io.connect(wsUrl2, {
         auth: {
             username, password,
