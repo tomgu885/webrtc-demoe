@@ -95,6 +95,8 @@ io.on('connection', socket => {
         socket.emit('availableOffers', offers)
     }
 
+    socket.to(socket.id).emit('hello', username)
+
     socket.on('disconnect', () => {
         console.log('client disconnected 111: ', socket.handshake.auth.username)
         const username = socket.handshake.auth.username

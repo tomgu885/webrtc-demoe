@@ -15,8 +15,17 @@ jQuery(function ($){
             username, password,
         }
     });
+
     socket.on('connect', () => {
         console.log('connected....');
+    })
+    socket.emit('ready22')
+    socket.on('hello', (username) => {
+        console.log('ready$....', username);
+    })
+
+    socket.on('ping', () => {
+        console.log('ping... from server');
     })
 
     socket.on('availableOffers', offers => {
