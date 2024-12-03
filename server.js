@@ -67,6 +67,7 @@ io.on('connection', socket => {
     }
 
     socket.on('disconnect', () => {
+        console.log('client disconnected 111: ', socket.handshake.auth.username)
         const username = socket.handshake.auth.username
         for (let i = 0, l = connectedSockets.length; i < l; i++) {
             if (connectedSockets[i].username === username) {
@@ -100,8 +101,16 @@ io.on('connection', socket => {
         socket.broadcast.emit('newOfferAwaiting', offers.slice(-1))
     })
 
-    socket.on('removeOffer', () => {
-        offers.forEach()
+    socket.on('removeOffer', (thisOffer) => {
+        console.log('removeOffer:', thisOffer)
+        if (!offers || offers.length === 0 ) {
+            console.log('no offers found');
+            return
+        }
+
+        offers.forEach(( offer) => {
+
+        })
     })
 
     socket.on('newAnswer', (offerObj, ackFunction) => {
