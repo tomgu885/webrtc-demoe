@@ -21,23 +21,23 @@ jQuery(function ($){
 
     socket.on('availableOffers', offers => {
         console.log('availableOffers', offers);
-        console.log('availableOffers', offers);
-        createOfferEls(offers);
+        createOfferEls(offers, username);
     })
 
-    socket.on('newOfferAwaiting', offers => {
-        console.log('newOfferAwaiting', offers);
-        createOfferEls(offers);
+    socket.on('answerResponse', async (offerObj) => { // 呼叫者
+        console.log('answerResponse:', offerObj);
+        console.log('addAnswer answer:', offerObj.answer)
+        await peerConnection.setRemoteDescription(offerObj.answer);
     });
 
-    socket.on('answerResponse', offerObj => {
-        console.log('answerResponse:', offerObj);
-        addAnswer(offerObj);
+    socket.on('receivedIceCandidateFromServer', iceCandidate => {
+        console.warn('receivedIceCandidateFromServer', iceCandidate);
+        // addNewIceCandidate(iceCandidate);
+        peerConnection.addIceCandidate(iceCandidate);
     })
 
-    socket.on('receivedIceCandidateFromServer', iceCandidate => {
-        console.log('receivedIceCandidateFromServer', iceCandidate);
-        addNewIceCandidate(iceCandidate);
+    socket.on('endvideo', () => {
+        reset(false)
     })
 
     const localVideoEl = document.querySelector('#local-video');
@@ -49,12 +49,12 @@ jQuery(function ($){
     let state = 'ready'; // ready , calling, talking
 
     let peerConfiguration = {
-        iceTransportPolicy: 'relay', // all (default), public , relay
+        iceTransportPolicy: 'all', // all (default), public , relay
         iceServers: [
             {
                 urls:[
             //         'stun:stun.yy.com:19302',
-            //         'stun:stun.chat.bilibili.com:19302',
+                    'stun:stun.chat.bilibili.com:3478',
                     'stun:stun.miwifi.com:3478',
                 ]
             },
@@ -67,27 +67,30 @@ jQuery(function ($){
         ]
     }
 
-
-
-    const answerOffer = async (offerObj) => {
-        console.log('answerOffer offerObj.offerUsername', offerObj.offerUsername);
-        await fetchUserMedia();
-        await createPeerConnection(offerObj);
-        const answer = await peerConnection.createAnswer({});
-        await peerConnection.setLocalDescription(answer);
-        offerObj.answer = answer;
-        const offerIceCandidates = await socket.emitWithAck('newAnswer', offerObj);
-        console.log('offerIceCandidates', offerIceCandidates);
-        offerIceCandidates.forEach(c => {
-            peerConnection.addIceCandidate(c);
-            console.log('add ice candidate', c);
-        });
+    if ($('#relay_only').is(':checked')) {
+        peerConfiguration.iceTransportPolicy = 'relay'
     }
 
-    const addAnswer = async (offerObj) => {
-        console.log('addAnswer:', offerObj)
-        await peerConnection.setRemoteDescription(offerObj.answer);
-    }
+    function createOfferEls(offers, myUsername) {
+        const answerEl = document.querySelector('#answer');
+        answerEl.innerHTML = '';
+        offers.forEach(offer => {
+            if (offer.offerUsername === myUsername) {
+                return
+            }
+            console.log('offer', offer);
+            const newOfferEl = document.createElement('div');
+            let text = `Answer ${offer.offerUsername}`;
+
+            if (offer.audioOnly) {
+                text += ':a'
+            }
+
+            newOfferEl.innerHTML = `<button class="btn btn-success">${text}</button>`
+            newOfferEl.addEventListener('click', () => answerOffer(offer));
+            answerEl.appendChild(newOfferEl);
+        })
+    } // createOfferEls
 
     const fetchUserMedia = () => {
         localStream = null;
@@ -99,7 +102,7 @@ jQuery(function ($){
         if ($('#audio_only').is(':checked')) {
             conf.video =false;
         }
-
+        console.log('getUserMedia conf.video:', conf.video);
         return new Promise(async (resolve, reject) => {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia(conf)
@@ -111,7 +114,7 @@ jQuery(function ($){
                 reject()
             }
         })
-    }
+    }// fetchUserMedia
 
     const createPeerConnection = (offerObj) => {
         return new Promise(async (resolve, reject) => {
@@ -121,7 +124,7 @@ jQuery(function ($){
 
             localStream.getTracks().forEach(track => {
                 // add local track
-                console.warn('add track')
+                console.warn('add local track to peerConnection:.')
                 peerConnection.addTrack(track);
             })
 
@@ -134,20 +137,30 @@ jQuery(function ($){
             });
 
             peerConnection.addEventListener('close', () => {
+                state = 'closed';
                 console.log('closed by other peer.')
+                reset();
             })
 
             peerConnection.addEventListener('icecandidate', (event) => {
-                if (event.candidate === null) {
-                    console.log('icecandidate nulll');
-                    return
-                }
-                console.log('peerConnection.on(icecandidate) found', event.candidate);
-                if (event.candidate.candidate.indexOf('relay') === -1) {
+                let relayOnly = $('#relay_only').is(':checked');
+                // if (event.candidate === null) {
+                //     console.log('icecandidate null');
+                //     return
+                // }
+
+                let isRelay = event.candidate && event.candidate.candidate.indexOf('relay') === -1
+                console.log('peerConnection.on(icecandidate) found', event.candidate ,' |isRelay:', isRelay);
+                // if (event.candidate.candidate.indexOf('relay') === -1) {
+                //     return
+                // }
+
+                if (!isRelay && relayOnly) {
+                    console.log('icecandidate relay only.');
                     return
                 }
 
-                console.warn('peerConnection.on(icecandidate) relay', event.candidate.candidate);
+                // console.log('peerConnection.on(icecandidate)', event.candidate.candidate);
 
                 if (event.candidate) {
                     socket.emit('sendIceCandidateToSignalingServer', {
@@ -158,6 +171,7 @@ jQuery(function ($){
                 }
             }); // icecandidate
 
+            console.log('add on track event');
             peerConnection.addEventListener('track', (event) => {
                 console.warn('track')
                 console.warn('get track from another peer', event);
@@ -170,15 +184,18 @@ jQuery(function ($){
             }) // track
 
             if (offerObj) {
+                console.log('setRemoteDescription offer', offerObj)
+                // Uncaught (in promise) OperationError: Failed to execute 'setRemoteDescription' on 'RTCPeerConnection': Failed to parse SessionDescription.
+                //     at scripts.js:183:38
                 await peerConnection.setRemoteDescription(offerObj.offer);
             }
 
             resolve()
         });
-    }
+    } // createPeerConnection
 
     const addNewIceCandidate = (iceCandidate) => {
-        console.warn('addNewIceCandidate');
+        console.warn('addNewIceCandidate', iceCandidate);
         // if (!peerConnection) {
         //     console.log('addNewIceCandidate, peerConnection not initialized');
         //     return;
@@ -188,18 +205,29 @@ jQuery(function ($){
         // console.log('addNewIceCandidate candidate', iceCandidate);
     }
 
-    function reset() {
+    function reset(signaling) {
         if (peerConnection) {
             peerConnection.close();
         } else {
             console.log('peerConnection not opening.')
         }
-        socket.emit('endvideo');
+
+        if (signaling) {
+            socket.emit('endvideo');
+        }
+
         localStream.getTracks().forEach((track) => {track.stop();});
         remoteStream.getTracks().forEach((track) => {track.stop();});
+        localVideoEl.srcObject = null;
+        remoteVideoEl.srcObject = null;
     }
 
     $('#call').click(async function (){
+        if (this.innerHTML === 'calling') {
+            console.log('in calling...');
+            return
+        }
+        let audioOnly = $('#audio_only').is(':checked')
         console.log('calling.')
         await fetchUserMedia();
         await createPeerConnection();
@@ -209,35 +237,50 @@ jQuery(function ($){
             console.log('call.offer', offer);
             await peerConnection.setLocalDescription(offer);
             didIOOffer = true;
-            socket.emit('newOffer', offer);
+            socket.emit('newOffer', {'offer':offer, 'audioOnly':audioOnly});
         } catch (err) {
             console.error(err);
         }
 
-        console.log('create offer');
         document.querySelector('#hangup').disabled = false;
         state = 'calling';
+        this.innerHTML = 'calling';
     });
+
+    const answerOffer = async (offerObj) => {
+        console.log('answerOffer offerObj.offerUsername', offerObj.offerUsername, ' |offerObj.audioOnly:' ,offerObj.audioOnly);
+        console.log('answerOffer ans:', offerObj.answer, ' candidate:', offerObj.offerIceCandidates);
+        if (offerObj.audioOnly) {
+            $('#audio_only').prop('checked', offerObj.audioOnly);
+        }
+        await fetchUserMedia();
+        console.log('after get media')
+        await createPeerConnection(offerObj);
+        const answer = await peerConnection.createAnswer({});
+        await peerConnection.setLocalDescription(answer);
+        offerObj.answer = answer;
+        const offerIceCandidates = await socket.emitWithAck('newAnswer', offerObj);
+        console.log('newAnswer|offerIceCandidates', offerIceCandidates);
+        offerIceCandidates.forEach(c => {
+            peerConnection.addIceCandidate(c);
+            console.log('add ice candidate', c);
+        });
+
+        $('#hangup').removeAttr('disabled')
+    }
+
     $('#hangup').click(function (){
+        console.log('hangup');
         if ('calling' === state) {
             socket.emit('removeOffer');
         }
 
-        reset();
+        $('#call').html('call');
+        reset(true);
     });
 });
 
-function createOfferEls(offers) {
-    const answerEl = document.querySelector('#answer');
-    answerEl.innerHTML = '';
-    offers.forEach(offer => {
-        console.log('offer', offer);
-        const newOfferEl = document.createElement('div');
-        newOfferEl.innerHTML = `<button class="btn btn-success col-1">Answer ${offer.offerUsername}</button>`
-        newOfferEl.addEventListener('click', () => answerOffer(offer));
-        answerEl.appendChild(newOfferEl);
-    })
-}
+
 
 
 
