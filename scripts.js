@@ -24,15 +24,23 @@ let localStream; // a var to hold the local video stream
 let remoteStream; // to hold remote video stream
 let peerConnection;// the peerConnection taht two client use to talk
 let didIOOffer = false;
+let state = 'ready'; // ready , calling, talking
 
 let peerConfiguration = {
+    iceTransportPolicy: 'relay', // all (default), public , relay
     iceServers: [
+        // {
+        //     urls:[
+        //         'stun:stun.yy.com:19302',
+        //         'stun:stun.chat.bilibili.com:19302',
+        //         'stun:stun.miwifi.com:19302',
+        //     ]
+        // },
         {
-            urls:[
-                'stun:stun.yy.com:19302',
-                'stun:stun.chat.bilibili.com:19302',
-                'stun:stun.miwifi.com:19302',
-            ]
+            urls: 'turn:23.248.245.197:3478?transport=udp',
+                // 'turn:175.27.245.108:3478?transport=udp',
+            credential: 'Pass@123', // password
+            username: 'coturn', // username
         }
     ]
 }
@@ -43,7 +51,7 @@ const call = async (evt) => {
     try {
         console.log('create offer');
         const offer = await peerConnection.createOffer();
-        console.log('offer', offer);
+        console.log('call.offer', offer);
         await peerConnection.setLocalDescription(offer);
         didIOOffer = true;
         socket.emit('newOffer', offer);
@@ -52,6 +60,20 @@ const call = async (evt) => {
     }
 
     console.log('create offer');
+    document.querySelector('#hangup').disabled = false;
+    state = 'calling';
+}
+
+const hangup = () => {
+    if ('calling' === state) {
+        socket.emit('removeOffer');
+    }
+
+    peerConnection.close();
+    socket.emit('endvideo');
+    localStream.getTracks().forEach((track) => {track.stop();});
+    remoteStream.getTracks().forEach((track) => {track.stop();});
+
 }
 
 const answerOffer = async (offerObj) => {
@@ -107,12 +129,26 @@ const createPeerConnection = (offerObj) => {
             console.log('signalingstatechange', event);
             console.log('signaling statechange', peerConnection.signalingState);
             if (peerConnection.signalingState === "stable") {
-                console.info('stable')
+                console.info('signalingState|stable')
             }
         });
 
+        peerConnection.addEventListener('close', () => {
+            console.log('closed by other peer.')
+        })
+
         peerConnection.addEventListener('icecandidate', (event) => {
-            console.log('peerConnection.on(icecandidate) found', event);
+            if (event.candidate === null) {
+                console.log('icecandidate nulll');
+                return
+            }
+            console.log('peerConnection.on(icecandidate) found', event.candidate);
+            if (event.candidate.candidate.indexOf('relay') === -1) {
+                return
+            }
+
+            console.warn('peerConnection.on(icecandidate) relay', event.candidate.candidate);
+
             if (event.candidate) {
                 socket.emit('sendIceCandidateToSignalingServer', {
                     iceCandidate: event.candidate,
@@ -147,8 +183,10 @@ const addNewIceCandidate = (iceCandidate) => {
     //     console.log('addNewIceCandidate, peerConnection not initialized');
     //     return;
     // }
+    // if (iceCandidate.iceCandidate)
     peerConnection.addIceCandidate(iceCandidate);
-    console.log('addNewIceCandidate candidate', iceCandidate);
+    // console.log('addNewIceCandidate candidate', iceCandidate);
 }
 
 document.querySelector('#call').addEventListener('click', call);
+document.querySelector('#hangup').addEventListener('click', hangup)

@@ -45,6 +45,7 @@ no-cli
 
 ## 参考
 
+1. https://medium.com/av-transcode/what-is-webrtc-and-how-to-setup-stun-turn-server-for-webrtc-communication-63314728b9d0
 1. https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Protocols
 1. https://github.com/robertbunch/webrtc-starter
 2. https://www.videosdk.live/developer-hub/stun-turn-server/webrtc-turn-server

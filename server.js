@@ -100,6 +100,10 @@ io.on('connection', socket => {
         socket.broadcast.emit('newOfferAwaiting', offers.slice(-1))
     })
 
+    socket.on('removeOffer', () => {
+        offers.forEach()
+    })
+
     socket.on('newAnswer', (offerObj, ackFunction) => {
         console.log('newAnswer|offerObj.offerUsername:', offerObj.offerUsername)
         // emit this answer back to client1
