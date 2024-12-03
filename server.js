@@ -115,9 +115,11 @@ io.on('connection', socket => {
 
     socket.on('newOffer', newOffer => {
         console.log('newOffer audioOnly:', newOffer.audioOnly)
+        console.log('newOffer relayOnly:', newOffer.relayOnly)
         offers.push({
             offerUsername: username,
             audioOnly: newOffer.audioOnly,
+            relayOnly: newOffer.relayOnly,
             offer: newOffer.offer,
             offerIceCandidates: [],
             answer: null,
@@ -194,9 +196,10 @@ io.on('connection', socket => {
             if (socketToEnd) {
                 socket.to(socketToEnd.socketId).emit('endvideo')
             }
+            removeOfferByName(offer2.offerUsername)
         }
 
-        removeOfferByName(offer2.offerUsername)
+
         socket.emit('availableOffers', offers)
     })
 

@@ -67,10 +67,6 @@ jQuery(function ($){
         ]
     }
 
-    if ($('#relay_only').is(':checked')) {
-        peerConfiguration.iceTransportPolicy = 'relay'
-    }
-
     function createOfferEls(offers, myUsername) {
         const answerEl = document.querySelector('#answer');
         answerEl.innerHTML = '';
@@ -87,7 +83,7 @@ jQuery(function ($){
             }
 
             newOfferEl.innerHTML = `<button class="btn btn-success">${text}</button>`
-            newOfferEl.addEventListener('click', () => answerOffer(offer));
+            newOfferEl.addEventListener('click', (evt) => answerOffer(evt, offer));
             answerEl.appendChild(newOfferEl);
         })
     } // createOfferEls
@@ -118,6 +114,11 @@ jQuery(function ($){
 
     const createPeerConnection = (offerObj) => {
         return new Promise(async (resolve, reject) => {
+            if ($('#relay_only').is(':checked')) {
+                peerConfiguration.iceTransportPolicy = 'relay'
+            } else {
+                peerConfiguration.iceTransportPolicy = 'all'
+            }
             peerConnection = await new RTCPeerConnection(peerConfiguration)
             remoteStream = new MediaStream();
             remoteVideoEl.srcObject = remoteStream;
@@ -155,10 +156,10 @@ jQuery(function ($){
                 //     return
                 // }
 
-                if (!isRelay && relayOnly) {
-                    console.log('icecandidate relay only.');
-                    return
-                }
+                // if (!isRelay && relayOnly) {
+                //     console.log('icecandidate relay only.');
+                //     return
+                // }
 
                 // console.log('peerConnection.on(icecandidate)', event.candidate.candidate);
 
@@ -237,7 +238,7 @@ jQuery(function ($){
             console.log('call.offer', offer);
             await peerConnection.setLocalDescription(offer);
             didIOOffer = true;
-            socket.emit('newOffer', {'offer':offer, 'audioOnly':audioOnly});
+            socket.emit('newOffer', {'offer':offer, 'audioOnly':audioOnly, 'relayOnly': $('#relay_only').is(':checked')});
         } catch (err) {
             console.error(err);
         }
@@ -247,12 +248,15 @@ jQuery(function ($){
         this.innerHTML = 'calling';
     });
 
-    const answerOffer = async (offerObj) => {
-        console.log('answerOffer offerObj.offerUsername', offerObj.offerUsername, ' |offerObj.audioOnly:' ,offerObj.audioOnly);
+    const answerOffer = async (evt, offerObj) => {
+        console.log('evt', evt)
+        $(evt.target).prop('disabled', true);
+        console.log('answerOffer offerObj.offerUsername', offerObj.offerUsername, ' |offerObj.audioOnly:' ,offerObj.audioOnly, ' |offerObj.relayOnly:' ,offerObj.relayOnly);
         console.log('answerOffer ans:', offerObj.answer, ' candidate:', offerObj.offerIceCandidates);
-        if (offerObj.audioOnly) {
-            $('#audio_only').prop('checked', offerObj.audioOnly);
-        }
+        $('#audio_only').prop('checked', !!offerObj.audioOnly);
+        $('#relay_only').prop('checked', !!offerObj.relayOnly);
+
+
         await fetchUserMedia();
         console.log('after get media')
         await createPeerConnection(offerObj);
