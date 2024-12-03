@@ -185,7 +185,7 @@ jQuery(function ($){
             }) // track
 
             if (offerObj) {
-                console.log('setRemoteDescription offer', offerObj)
+                console.log('setRemoteDescription offer', offerObj.offer)
                 // Uncaught (in promise) OperationError: Failed to execute 'setRemoteDescription' on 'RTCPeerConnection': Failed to parse SessionDescription.
                 //     at scripts.js:183:38
                 await peerConnection.setRemoteDescription(offerObj.offer);
