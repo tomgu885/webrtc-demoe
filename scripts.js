@@ -66,8 +66,8 @@ jQuery(function ($){
                     'stun:stun.miwifi.com:3478',
                 ]
             },
-            {
-                urls: 'turn:23.248.245.197:3478?transport=udp',
+            {//  39.96.125.135
+                urls: 'turn:39.96.125.135:3478?transport=udp',
                 // 'turn:175.27.245.108:3478?transport=udp',
                 credential: 'Pass@123', // password
                 username: 'coturn', // username
@@ -152,8 +152,6 @@ jQuery(function ($){
             })
 
             peerConnection.addEventListener('icecandidate', (event) => {
-
-
                 let isRelay = event.candidate && event.candidate.candidate.indexOf('relay') === -1
                 console.log('peerConnection.on(icecandidate) foundKK158', event.candidate );
 
